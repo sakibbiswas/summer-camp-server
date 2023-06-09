@@ -138,19 +138,19 @@ async function run() {
             const result = await classCollection.find().toArray();
             res.send(result)
         })
-
-        app.post('/menu', verifyJWT, verifyAdmin, async (req, res) => {
+        // verifyAdmin,
+        app.post('/class', verifyJWT, async (req, res) => {
             const newItem = req.body;
             // console.log(item);
-            const result = await MenuCollection.insertOne(newItem)
+            const result = await classCollection.insertOne(newItem)
             res.send(result)
         })
-
-        app.delete('/menu/:id', verifyJWT, verifyAdmin, async (req, res) => {
+        // verifyAdmin,
+        app.delete('/class/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             // console.log(id);
             const query = { _id: new ObjectId(id) }
-            const result = await MenuCollection.deleteOne(query)
+            const result = await classCollection.deleteOne(query)
             res.send(result)
         })
 
@@ -164,17 +164,18 @@ async function run() {
 
         //cart collection api verifyJWT
         // step 2
-        app.get('/select', verifyJWT, async (req, res) => {
+        app.get('/select', async (req, res) => {
             const email = req.query.email;
+            console.log(email);
             if (!email) {
                 res.send([])
             }
 
-            const decodedEmail = req.decoded.email;
+            // const decodedEmail = req.decoded.email;
 
-            if (email !== decodedEmail) {
-                return req.status(403).send({ error: 1, message: 'forbidden access' })
-            }
+            // if (email !== decodedEmail) {
+            //     return req.status(403).send({ error: 1, message: 'forbidden access' })
+            // }
             const query = { email: email };
             const result = await selectCollection.find(query).toArray();
             res.send(result)
