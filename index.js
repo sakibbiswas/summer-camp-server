@@ -5,7 +5,7 @@ const cors = require('cors')
 const port = process.env.PORT || 3000;
 const jwt = require('jsonwebtoken');
 require('dotenv').config()
-// const stripe = require("stripe")(process.env.payment_secret_key)
+const stripe = require("stripe")(process.env.payment_secret_key)
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 // middlewire
@@ -54,7 +54,7 @@ async function run() {
         const selectCollection = client.db("summerdb").collection("select");
         const classCollection = client.db("summerdb").collection("classes");
 
-        // const PaymentsCollection = client.db("destroyDB").collection("payments");
+        const PaymentsCollection = client.db("summerdb").collection("payments");
 
         // jwt 
         app.post('/jwt', (req, res) => {
@@ -79,8 +79,8 @@ async function run() {
 
 
 
-        // users related api
-        app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
+        // users related api  verifyJWT, verifyAdmin
+        app.get('/users', async (req, res) => {
             const result = await UsersCollection.find().toArray();
             res.send(result)
         })
@@ -97,15 +97,30 @@ async function run() {
             res.send(result)
         });
 
-        app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+        // verifyJWT,
+        app.get('/users/admin/:email', async (req, res) => {
             const email = req.params.email;
 
-            if (req.decoded.email !== email) {
-                res.send({ admin: false })
-            }
+            // if (req.decoded.email !== email) {
+            //     res.send({ admin: false })
+            // }
             const query = { email: email }
             const user = await UsersCollection.findOne(query)
             const result = { admin: user?.role === 'admin' }
+            res.send(result)
+
+
+        })
+        // verifyJWT,
+        app.get('/users/instructor/:email', async (req, res) => {
+            const email = req.params.email;
+
+            // if (req.decoded.email !== email) {
+            //     res.send({ admin: false })
+            // }
+            const query = { email: email }
+            const user = await UsersCollection.findOne(query)
+            const result = { instructor: user?.role === 'instructor' }
             res.send(result)
 
 
@@ -118,6 +133,19 @@ async function run() {
             const updateDoc = {
                 $set: {
                     role: 'admin'
+                },
+            };
+            const result = await UsersCollection.updateOne(filter, updateDoc)
+            res.send(result)
+        });
+
+        app.patch('/users/instructor/:id', async (req, res) => {
+            const id = req.params.id;
+            // console.log(id);
+            const filter = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    role: 'instructor'
                 },
             };
             const result = await UsersCollection.updateOne(filter, updateDoc)
@@ -146,7 +174,7 @@ async function run() {
             res.send(result)
         })
         // verifyAdmin,
-        app.delete('/class/:id', verifyJWT, async (req, res) => {
+        app.delete('/class/:id', async (req, res) => {
             const id = req.params.id;
             // console.log(id);
             const query = { _id: new ObjectId(id) }
@@ -196,12 +224,10 @@ async function run() {
             res.send(result)
         })
 
-        // create payment intent
+        // create payment intent  verifyJWT,
         app.post('/create-payment-intent', verifyJWT, async (req, res) => {
             const { price } = req.body;
             const amount = parseInt(price * 100);
-            // console.log(price, amount);
-            // Create a PaymentIntent with the order amount and currency
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount,
                 currency: "usd",
@@ -215,37 +241,28 @@ async function run() {
         });
 
 
-        // payment related api
+        // payment related api verifyJWT,
         app.post('/payments', verifyJWT, async (req, res) => {
             const payment = req.body;
             console.log(payment);
-            payment.menuItems = payment.menuItems.map(item => new ObjectId(item))
+            // payment.menuItems = payment.menuItems.map(item => new ObjectId(item))
             const insertResult = await PaymentsCollection.insertOne(payment)
             const query = {
-                _id: { $in: payment.cartItems.map(id => new ObjectId(id)) }
+                _id: { $in: payment.selectedclass.map(id => new ObjectId(id)) }
             }
-            const deleteResult = await CartCollection.deleteMany(query)
+            const deleteResult = await selectCollection.deleteMany(query)
             res.send({ insertResult, deleteResult })
         })
+        app.get('/enrolled', async (req, res) => {
+            const result = await PaymentsCollection.find().toArray();
+            res.send(result)
+        })
+
         // count related api
         app.get('/admin-stats', verifyJWT, verifyAdmin, async (req, res) => {
             const users = await UsersCollection.estimatedDocumentCount();
             const products = await MenuCollection.estimatedDocumentCount();
             const orders = await PaymentsCollection.estimatedDocumentCount();
-
-
-            // best way to sum of the price field is to use group and sum operation
-            /*
-           awaite paymentcollection.aggregate([
-  {
-    $group: {
-      _id: null,
-      totalPrice: { $sum: "$price" }
-    }
-  }
-]).toArray()
-
-            */
             const payments = await PaymentsCollection.find().toArray()
             const revenue = payments.reduce((sum, payment) => sum + payment.price, 0)
             res.send({
@@ -259,14 +276,9 @@ async function run() {
         // 
         app.get('/order-stats', verifyJWT, verifyAdmin, async (req, res) => {
             const pipeline = [
-                // { $unwind: '$items' },
+
                 {
-                    // $lookup: {
-                    //     from: 'menu',
-                    //     localField: 'items',
-                    //     foreignField: '_id',
-                    //     as: 'menuItemData'
-                    // }
+
                     $lookup: {
                         from: "menu",
                         localField: "menuItems",
