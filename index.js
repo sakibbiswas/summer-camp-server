@@ -45,7 +45,7 @@ const verifyJWT = (req, res, next) => {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        // await client.connect();
+
         const UsersCollection = client.db("summerdb").collection("users");
         const selectCollection = client.db("summerdb").collection("select");
         const classCollection = client.db("summerdb").collection("classes");
@@ -53,7 +53,6 @@ async function run() {
         // jwt 
         app.post('/jwt', (req, res) => {
             const user = req.body;
-
             const token = jwt.sign(user, process.env.access_token_secret, { expiresIn: '1h' })
             res.send({ token })
         })
