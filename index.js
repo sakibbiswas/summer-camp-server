@@ -217,8 +217,6 @@ async function run() {
                 clientSecret: paymentIntent.client_secret,
             });
         });
-
-
         // payment related api verifyJWT,
         app.post('/payments', verifyJWT, async (req, res) => {
             const payment = req.body;
