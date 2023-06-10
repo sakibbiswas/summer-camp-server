@@ -80,7 +80,7 @@ async function run() {
 
 
         // users related api  verifyJWT, verifyAdmin
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
             const result = await UsersCollection.find().toArray();
             res.send(result)
         })
@@ -97,9 +97,11 @@ async function run() {
             res.send(result)
         });
 
-        app.get('/users/admin/:email', async (req, res) => {
+        app.get('/users/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
-
+            if (req.decoded.email !== email) {
+                res.send({ admin: false })
+            }
 
             const query = { email: email }
             const user = await UsersCollection.findOne(query)
@@ -166,7 +168,7 @@ async function run() {
         })
 
 
-        app.delete('/class/:id', verifyAdmin, async (req, res) => {
+        app.delete('/class/:id', verifyJWT, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await classCollection.deleteOne(query)
@@ -175,13 +177,16 @@ async function run() {
 
 
         // select related api
-        app.get('/select', async (req, res) => {
+        app.get('/select', verifyJWT, async (req, res) => {
             const email = req.query.email;
             console.log(email);
             if (!email) {
                 res.send([])
             }
-
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return req.status(403).send({ error: 1, message: 'forbidden access' })
+            }
             const query = { email: email };
             const result = await selectCollection.find(query).toArray();
             res.send(result)
