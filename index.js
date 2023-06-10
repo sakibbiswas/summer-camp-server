@@ -9,6 +9,7 @@ const stripe = require("stripe")(process.env.payment_secret_key)
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 // Middlewire
+
 app.use(cors())
 app.use(express.json())
 
