@@ -45,7 +45,6 @@ const verifyJWT = (req, res, next) => {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-
         const UsersCollection = client.db("summerdb").collection("users");
         const selectCollection = client.db("summerdb").collection("select");
         const classCollection = client.db("summerdb").collection("classes");
@@ -75,10 +74,8 @@ async function run() {
         })
         app.post('/users', async (req, res) => {
             const user = req.body;
-
             const query = { email: user.email, status: user.status }
             const existingUser = await UsersCollection.findOne(query)
-
             if (existingUser) {
                 return res.send({ message: 'user Already exists' })
             }
@@ -96,8 +93,6 @@ async function run() {
             const user = await UsersCollection.findOne(query)
             const result = { admin: user?.role === 'admin' }
             res.send(result)
-
-
         })
 
         app.get('/users/instructor/:email', async (req, res) => {
@@ -106,8 +101,6 @@ async function run() {
             const user = await UsersCollection.findOne(query)
             const result = { instructor: user?.role === 'instructor' }
             res.send(result)
-
-
         })
 
         app.patch('/users/admin/:id', async (req, res) => {
@@ -142,7 +135,6 @@ async function run() {
             const result = await UsersCollection.deleteOne(query)
             res.send(result)
         })
-
 
         //class related api
         app.get('/class', async (req, res) => {
