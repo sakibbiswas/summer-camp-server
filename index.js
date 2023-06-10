@@ -52,7 +52,7 @@ async function run() {
         // jwt 
         app.post('/jwt', (req, res) => {
             const user = req.body;
-            const token = jwt.sign(user, process.env.access_token_secret, { expiresIn: '1h' })
+            const token = jwt.sign(user, process.env.access_token_secret, { expiresIn: 5 })
             res.send({ token })
         })
 
@@ -141,15 +141,16 @@ async function run() {
             const result = await classCollection.find().toArray();
             res.send(result)
         })
-        // verifyAdmin,
-        app.post('/class', verifyJWT, verifyAdmin, async (req, res) => {
+
+        //verifyJWT, verifyAdmin,
+        app.post('/class', async (req, res) => {
             const newClass = req.body;
             const result = await classCollection.insertOne(newClass)
             res.send(result)
         })
 
-
-        app.delete('/class/:id', verifyJWT, verifyAdmin, async (req, res) => {
+        // verifyJWT, verifyAdmin,
+        app.delete('/class/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await classCollection.deleteOne(query)
@@ -212,7 +213,6 @@ async function run() {
         })
 
         app.get('/enrolled', async (req, res) => {
-
             const result = await PaymentsCollection.find().toArray();
             res.send(result)
         })
