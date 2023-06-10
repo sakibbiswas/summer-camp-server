@@ -8,7 +8,7 @@ require('dotenv').config()
 const stripe = require("stripe")(process.env.payment_secret_key)
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
-// middlewire
+// Middlewire
 app.use(cors())
 app.use(express.json())
 
@@ -39,7 +39,7 @@ const verifyJWT = (req, res, next) => {
             return res.status(401).send({ error: true, message: 'unauthorized access' })
 
         }
-        // console.log(decoded);
+
         req.decoded = decoded;
 
         next()
@@ -50,7 +50,7 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         // await client.connect();
         const UsersCollection = client.db("summerdb").collection("users");
-        // const MenuCollection = client.db("destroyDB").collection("menu");
+
         const selectCollection = client.db("summerdb").collection("select");
         const classCollection = client.db("summerdb").collection("classes");
 
@@ -59,12 +59,12 @@ async function run() {
         // jwt 
         app.post('/jwt', (req, res) => {
             const user = req.body;
-            // console.log(user)
+
             const token = jwt.sign(user, process.env.access_token_secret, { expiresIn: '1h' })
 
             res.send({ token })
         })
-        // warning : use verifyJWT before using verifyAdmin
+
         const verifyAdmin = async (req, res, next) => {
             const email = req.decoded.email;
             const query = { email: email }
@@ -86,10 +86,10 @@ async function run() {
         })
         app.post('/users', async (req, res) => {
             const user = req.body;
-            // console.log(user);
-            const query = { email: user.email }
+
+            const query = { email: user.email, status: user.status }
             const existingUser = await UsersCollection.findOne(query)
-            // console.log('existing user', existingUser);
+
             if (existingUser) {
                 return res.send({ message: 'user Already exists' })
             }
@@ -97,13 +97,11 @@ async function run() {
             res.send(result)
         });
 
-        // verifyJWT,
+
         app.get('/users/admin/:email', async (req, res) => {
             const email = req.params.email;
 
-            // if (req.decoded.email !== email) {
-            //     res.send({ admin: false })
-            // }
+
             const query = { email: email }
             const user = await UsersCollection.findOne(query)
             const result = { admin: user?.role === 'admin' }
@@ -111,13 +109,9 @@ async function run() {
 
 
         })
-        // verifyJWT,
+
         app.get('/users/instructor/:email', async (req, res) => {
             const email = req.params.email;
-
-            // if (req.decoded.email !== email) {
-            //     res.send({ admin: false })
-            // }
             const query = { email: email }
             const user = await UsersCollection.findOne(query)
             const result = { instructor: user?.role === 'instructor' }
@@ -128,7 +122,6 @@ async function run() {
 
         app.patch('/users/admin/:id', async (req, res) => {
             const id = req.params.id;
-            // console.log(id);
             const filter = { _id: new ObjectId(id) }
             const updateDoc = {
                 $set: {
@@ -141,7 +134,7 @@ async function run() {
 
         app.patch('/users/instructor/:id', async (req, res) => {
             const id = req.params.id;
-            // console.log(id);
+
             const filter = { _id: new ObjectId(id) }
             const updateDoc = {
                 $set: {
@@ -154,7 +147,7 @@ async function run() {
 
         app.delete('/users/:id', async (req, res) => {
             const id = req.params.id;
-            // console.log(id);
+
             const query = { _id: new ObjectId(id) }
             const result = await UsersCollection.deleteOne(query)
             res.send(result)
@@ -167,31 +160,22 @@ async function run() {
             res.send(result)
         })
         // verifyAdmin,
-        app.post('/class', verifyJWT, async (req, res) => {
-            const newItem = req.body;
-            // console.log(item);
-            const result = await classCollection.insertOne(newItem)
+        app.post('/class', verifyJWT, verifyAdmin, async (req, res) => {
+            const newClass = req.body;
+            const result = await classCollection.insertOne(newClass)
             res.send(result)
         })
-        // verifyAdmin,
-        app.delete('/class/:id', async (req, res) => {
+
+
+        app.delete('/class/:id', verifyAdmin, async (req, res) => {
             const id = req.params.id;
-            // console.log(id);
             const query = { _id: new ObjectId(id) }
             const result = await classCollection.deleteOne(query)
             res.send(result)
         })
 
 
-
-        //reviews
-        // app.get('/reviews', async (req, res) => {
-        //     const result = await ReviewsCollection.find().toArray();
-        //     res.send(result)
-        // })
-
-        //cart collection api verifyJWT
-        // step 2
+        // select related api
         app.get('/select', async (req, res) => {
             const email = req.query.email;
             console.log(email);
@@ -199,11 +183,6 @@ async function run() {
                 res.send([])
             }
 
-            // const decodedEmail = req.decoded.email;
-
-            // if (email !== decodedEmail) {
-            //     return req.status(403).send({ error: 1, message: 'forbidden access' })
-            // }
             const query = { email: email };
             const result = await selectCollection.find(query).toArray();
             res.send(result)
@@ -211,14 +190,13 @@ async function run() {
         // step 1
         app.post('/select', async (req, res) => {
             const set = req.body;
-            // console.log(item);
             const result = await selectCollection.insertOne(set)
             res.send(result)
         })
         // step 2
         app.delete('/select/:id', async (req, res) => {
             const id = req.params.id;
-            // console.log(id);
+
             const query = { _id: new ObjectId(id) }
             const result = await selectCollection.deleteOne(query)
             res.send(result)
@@ -245,7 +223,6 @@ async function run() {
         app.post('/payments', verifyJWT, async (req, res) => {
             const payment = req.body;
             console.log(payment);
-            // payment.menuItems = payment.menuItems.map(item => new ObjectId(item))
             const insertResult = await PaymentsCollection.insertOne(payment)
             const query = {
                 _id: { $in: payment.selectedclass.map(id => new ObjectId(id)) }
@@ -253,57 +230,10 @@ async function run() {
             const deleteResult = await selectCollection.deleteMany(query)
             res.send({ insertResult, deleteResult })
         })
+
         app.get('/enrolled', async (req, res) => {
+
             const result = await PaymentsCollection.find().toArray();
-            res.send(result)
-        })
-
-        // count related api
-        app.get('/admin-stats', verifyJWT, verifyAdmin, async (req, res) => {
-            const users = await UsersCollection.estimatedDocumentCount();
-            const products = await MenuCollection.estimatedDocumentCount();
-            const orders = await PaymentsCollection.estimatedDocumentCount();
-            const payments = await PaymentsCollection.find().toArray()
-            const revenue = payments.reduce((sum, payment) => sum + payment.price, 0)
-            res.send({
-                users,
-                products,
-                orders,
-                revenue
-            })
-        });
-
-        // 
-        app.get('/order-stats', verifyJWT, verifyAdmin, async (req, res) => {
-            const pipeline = [
-
-                {
-
-                    $lookup: {
-                        from: "menu",
-                        localField: "menuItems",
-                        foreignField: "_id",
-                        as: "menuItemData",
-                    },
-                },
-                { $unwind: '$menuItemData' },
-                {
-                    $group: {
-                        _id: '$menuItemData.category',
-                        itemCount: { $sum: 1 },
-                        total: { $sum: { $round: ['$menuItemData.price', 2] } }
-                    }
-                },
-                {
-                    $project: {
-                        category: '$_id',
-                        itemCount: 1,
-                        total: 1,
-                        _id: 0
-                    }
-                }
-            ];
-            const result = await PaymentsCollection.aggregate(pipeline).toArray()
             res.send(result)
         })
 
@@ -316,15 +246,6 @@ async function run() {
     }
 }
 run().catch(console.dir);
-
-
-
-
-
-
-
-
-
 
 app.get('/', (req, res) => {
     res.send('camp is running');
