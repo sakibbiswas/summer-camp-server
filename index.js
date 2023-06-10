@@ -156,7 +156,6 @@ async function run() {
             res.send(result)
         })
 
-
         // select related api
         app.get('/select', verifyJWT, async (req, res) => {
             const email = req.query.email;
@@ -195,7 +194,6 @@ async function run() {
                 currency: "usd",
                 payment_method_types: ['card']
             });
-            console.log(paymentIntent);
 
             res.send({
                 clientSecret: paymentIntent.client_secret,
