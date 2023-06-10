@@ -48,12 +48,9 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         // await client.connect();
         const UsersCollection = client.db("summerdb").collection("users");
-
         const selectCollection = client.db("summerdb").collection("select");
         const classCollection = client.db("summerdb").collection("classes");
-
         const PaymentsCollection = client.db("summerdb").collection("payments");
-
         // jwt 
         app.post('/jwt', (req, res) => {
             const user = req.body;
