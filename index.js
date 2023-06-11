@@ -142,14 +142,14 @@ async function run() {
             res.send(result)
         })
 
-        //verifyJWT, verifyAdmin,
+
         app.post('/class', async (req, res) => {
             const newClass = req.body;
             const result = await classCollection.insertOne(newClass)
             res.send(result)
         })
 
-        // verifyJWT, verifyAdmin,
+
         app.delete('/class/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
